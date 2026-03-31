@@ -29,13 +29,16 @@ export default function Home() {
         body: JSON.stringify({ phone, name }),
       });
 
-      if (!res.ok) throw new Error("Error registering");
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Error registering");
+      }
 
       const user = await res.json();
       localStorage.setItem("quizUser", JSON.stringify(user));
       router.push("/quiz");
-    } catch {
-      setError("Error al registrarse. Intenta de nuevo.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al registrarse. Intenta de nuevo.");
     } finally {
       setLoading(false);
     }

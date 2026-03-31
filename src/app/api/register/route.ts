@@ -12,11 +12,32 @@ export async function POST(req: NextRequest) {
              req.headers.get("x-real-ip") ||
              "unknown";
 
-  const user = await prisma.quizUser.upsert({
-    where: { phone_ip: { phone, ip } },
-    update: { name },
-    create: { phone, name, ip },
+  // Check if this IP is already used by a different phone number
+  const existingIp = await prisma.quizUser.findFirst({
+    where: { ip, NOT: { phone } },
   });
+
+  if (existingIp) {
+    return NextResponse.json(
+      { error: "Este dispositivo ya esta registrado con otro numero" },
+      { status: 409 }
+    );
+  }
+
+  // Find existing user by phone (might be on a new device/IP)
+  let user = await prisma.quizUser.findFirst({ where: { phone } });
+
+  if (user) {
+    // Update IP and name if they changed devices
+    user = await prisma.quizUser.update({
+      where: { id: user.id },
+      data: { ip, name },
+    });
+  } else {
+    user = await prisma.quizUser.create({
+      data: { phone, name, ip },
+    });
+  }
 
   return NextResponse.json(user);
 }

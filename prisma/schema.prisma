@@ -16,7 +16,7 @@ model QuizUser {
 
   attempts QuizAttempt[]
 
-  @@unique([phone, ip])
+  @@unique([phone])
   @@map("quiz_user")
 }
 
