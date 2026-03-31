@@ -39,6 +39,15 @@ export default function NewQuestion() {
   const [mediaUrl, setMediaUrl] = useState("");
   const [mediaType, setMediaType] = useState<string>("IMAGE");
   const [relatedImages, setRelatedImages] = useState<string[]>([]);
+  const [expiresAt, setExpiresAt] = useState(() => {
+    // Default: today 23:59 Guatemala time (UTC-6)
+    const now = new Date();
+    const gt = new Date(now.toLocaleString("en-US", { timeZone: "America/Guatemala" }));
+    const y = gt.getFullYear();
+    const m = String(gt.getMonth() + 1).padStart(2, "0");
+    const d = String(gt.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}T23:59`;
+  });
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadingRelated, setUploadingRelated] = useState(false);
@@ -59,6 +68,16 @@ export default function NewQuestion() {
     setMediaUrl(q.mediaUrl || "");
     setMediaType(q.mediaType || "IMAGE");
     setRelatedImages(q.relatedImages ? JSON.parse(q.relatedImages) : []);
+    if (q.expiresAt) {
+      const d = new Date(q.expiresAt);
+      const gt = new Date(d.toLocaleString("en-US", { timeZone: "America/Guatemala" }));
+      const y = gt.getFullYear();
+      const mo = String(gt.getMonth() + 1).padStart(2, "0");
+      const da = String(gt.getDate()).padStart(2, "0");
+      const h = String(gt.getHours()).padStart(2, "0");
+      const mi = String(gt.getMinutes()).padStart(2, "0");
+      setExpiresAt(`${y}-${mo}-${da}T${h}:${mi}`);
+    }
   }, [editId]);
 
   useEffect(() => {
@@ -115,6 +134,7 @@ export default function NewQuestion() {
       mediaUrl: mediaUrl || null,
       mediaType,
       relatedImages: relatedImages.length > 0 ? relatedImages : null,
+      expiresAt: expiresAt ? new Date(`${expiresAt}:00-06:00`).toISOString() : null,
       order: 0,
       active: true,
     };
@@ -361,6 +381,17 @@ export default function NewQuestion() {
             rows={2}
             placeholder="Por que esta es la respuesta correcta..."
             className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition resize-none"
+          />
+        </div>
+
+        {/* Expiration */}
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">Disponible hasta (hora Guatemala)</label>
+          <input
+            type="datetime-local"
+            value={expiresAt}
+            onChange={(e) => setExpiresAt(e.target.value)}
+            className="px-4 py-2 rounded-xl bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-purple-500 transition"
           />
         </div>
 

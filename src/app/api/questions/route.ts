@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   const questions = await prisma.question.findMany({
-    where: { active: true },
     orderBy: { order: "asc" },
   });
   return NextResponse.json(questions);
@@ -26,6 +25,7 @@ export async function POST(req: NextRequest) {
       correctAnswer: data.correctAnswer,
       explanation: data.explanation || null,
       relatedImages: data.relatedImages ? JSON.stringify(data.relatedImages) : null,
+      expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
       order: data.order || 0,
     },
   });

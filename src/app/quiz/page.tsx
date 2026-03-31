@@ -9,10 +9,10 @@ interface Question {
   mediaUrl: string | null;
   mediaType: "IMAGE" | "VIDEO";
   answerType: "YES_NO" | "TEXT" | "NUMBER" | "MULTIPLE_CHOICE";
-  options: string | null;
+  options: string[] | null;
   correctAnswer: string;
   explanation: string | null;
-  relatedImages: string | null;
+  relatedImages: string[] | null;
 }
 
 export default function QuizPage() {
@@ -114,9 +114,7 @@ export default function QuizPage() {
   }
 
   const q = questions[current];
-  const parsedOptions: string[] = q.options
-    ? (typeof q.options === "string" ? JSON.parse(q.options) : q.options)
-    : [];
+  const parsedOptions: string[] = q.options || [];
 
   return (
     <main className="flex-1 flex flex-col items-center justify-center p-4">
@@ -148,9 +146,9 @@ export default function QuizPage() {
           )}
 
           {/* Related card images */}
-          {q.relatedImages && (
+          {q.relatedImages && q.relatedImages.length > 0 && (
             <div className="mb-4 flex gap-2 overflow-x-auto pb-2">
-              {(typeof q.relatedImages === "string" ? JSON.parse(q.relatedImages) : q.relatedImages).map((imgUrl: string, i: number) => (
+              {q.relatedImages.map((imgUrl, i) => (
                 <img
                   key={i}
                   src={imgUrl}

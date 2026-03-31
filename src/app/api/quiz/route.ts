@@ -20,10 +20,15 @@ export async function POST(req: NextRequest) {
 
   const answeredSet = new Set(answeredIds.map((a) => a.questionId));
 
+  const now = new Date();
   const questions = await prisma.question.findMany({
     where: {
       active: true,
       id: { notIn: [...answeredSet] },
+      OR: [
+        { expiresAt: null },
+        { expiresAt: { gte: now } },
+      ],
     },
     orderBy: { order: "asc" },
   });
@@ -39,7 +44,14 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return NextResponse.json({ attempt, questions });
+  // Parse JSON string fields so the client receives clean arrays
+  const parsed = questions.map((q) => ({
+    ...q,
+    options: q.options ? JSON.parse(q.options) : null,
+    relatedImages: q.relatedImages ? JSON.parse(q.relatedImages) : null,
+  }));
+
+  return NextResponse.json({ attempt, questions: parsed });
 }
 
 // Submit an answer
