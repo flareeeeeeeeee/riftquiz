@@ -12,12 +12,25 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    const stored = localStorage.getItem("quizUser");
-    if (stored) {
-      router.push("/quiz");
-    } else {
+    async function checkUser() {
+      const stored = localStorage.getItem("quizUser");
+      if (stored) {
+        router.push("/quiz");
+        return;
+      }
+      // Try to find user by IP
+      try {
+        const res = await fetch("/api/me");
+        const user = await res.json();
+        if (user?.id) {
+          localStorage.setItem("quizUser", JSON.stringify(user));
+          router.push("/quiz");
+          return;
+        }
+      } catch { /* ignore */ }
       setChecking(false);
     }
+    checkUser();
   }, [router]);
 
   if (checking) {
