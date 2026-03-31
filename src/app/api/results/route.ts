@@ -21,14 +21,13 @@ export async function GET(req: NextRequest) {
     include: { attempt: { select: { userId: true } } },
   });
 
-  // Build lookup: userId -> questionId -> isCorrect
-  const answerMap: Record<string, Record<string, boolean>> = {};
+  // Build lookup: userId -> questionId -> { isCorrect, answer }
+  const answerMap: Record<string, Record<string, { isCorrect: boolean; answer: string }>> = {};
   for (const a of answers) {
     const uid = a.attempt.userId;
     if (!answerMap[uid]) answerMap[uid] = {};
-    // Keep first answer only (shouldn't have duplicates but just in case)
     if (!(a.questionId in answerMap[uid])) {
-      answerMap[uid][a.questionId] = a.isCorrect;
+      answerMap[uid][a.questionId] = { isCorrect: a.isCorrect, answer: a.answer };
     }
   }
 

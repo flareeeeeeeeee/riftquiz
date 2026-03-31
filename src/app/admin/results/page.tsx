@@ -3,16 +3,22 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAdmin } from "../layout";
 
+interface AnswerDetail {
+  isCorrect: boolean;
+  answer: string;
+}
+
 interface MatrixData {
   questions: { id: string; text: string }[];
   users: { id: string; name: string; phone: string }[];
-  answerMap: Record<string, Record<string, boolean>>;
+  answerMap: Record<string, Record<string, AnswerDetail>>;
 }
 
 export default function ResultsPage() {
   const { password } = useAdmin();
   const [data, setData] = useState<MatrixData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<{ userName: string; questionText: string; answer: string; correct: boolean } | null>(null);
 
   const fetchResults = useCallback(async () => {
     const res = await fetch("/api/results", {
@@ -31,10 +37,9 @@ export default function ResultsPage() {
 
   const { questions, users, answerMap } = data;
 
-  // Count correct per user
   function userScore(userId: string) {
     const map = answerMap[userId] || {};
-    return Object.values(map).filter(Boolean).length;
+    return Object.values(map).filter((a) => a.isCorrect).length;
   }
 
   return (
@@ -78,17 +83,18 @@ export default function ResultsPage() {
                       <span className="text-gray-600 text-xs ml-2">{u.phone}</span>
                     </td>
                     {questions.map((q) => {
-                      const answered = q.id in map;
-                      const correct = map[q.id];
+                      const detail = map[q.id];
+                      const answered = !!detail;
                       return (
                         <td key={q.id} className="px-1 py-1 text-center">
-                          <div
-                            className={`w-8 h-8 rounded mx-auto ${
+                          <button
+                            onClick={() => answered && setSelected({ userName: u.name, questionText: q.text, answer: detail.answer, correct: detail.isCorrect })}
+                            className={`w-8 h-8 rounded mx-auto block ${
                               !answered
-                                ? "bg-gray-800"
-                                : correct
-                                ? "bg-green-600"
-                                : "bg-red-600"
+                                ? "bg-gray-800 cursor-default"
+                                : detail.isCorrect
+                                ? "bg-green-600 hover:bg-green-500 cursor-pointer"
+                                : "bg-red-600 hover:bg-red-500 cursor-pointer"
                             }`}
                           />
                         </td>
@@ -102,6 +108,21 @@ export default function ResultsPage() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {selected && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setSelected(null)}>
+          <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+            <p className="text-gray-400 text-sm mb-1">{selected.userName}</p>
+            <p className="text-white font-medium mb-4">{selected.questionText}</p>
+            <div className={`inline-block px-3 py-1 rounded text-sm font-medium ${selected.correct ? "bg-green-600/20 text-green-400" : "bg-red-600/20 text-red-400"}`}>
+              {selected.answer}
+            </div>
+            <button onClick={() => setSelected(null)} className="block mt-4 text-gray-500 text-sm hover:text-gray-300">
+              Cerrar
+            </button>
+          </div>
         </div>
       )}
     </div>
