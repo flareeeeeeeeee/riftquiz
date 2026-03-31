@@ -44,9 +44,17 @@ export default function ResultsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">
-        Resultados ({users.length} usuarios, {questions.length} preguntas)
-      </h1>
+      <div className="flex items-center gap-4 mb-6">
+        <h1 className="text-2xl font-bold">
+          Resultados ({users.length} usuarios, {questions.length} preguntas)
+        </h1>
+        <button
+          onClick={() => { setLoading(true); fetchResults(); }}
+          className="px-3 py-1 text-sm bg-gray-800 hover:bg-gray-700 text-gray-300 rounded"
+        >
+          Refrescar
+        </button>
+      </div>
 
       {users.length === 0 ? (
         <p className="text-gray-500">Nadie ha respondido aun.</p>
