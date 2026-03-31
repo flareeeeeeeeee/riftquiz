@@ -64,10 +64,12 @@ export default function NewQuestion() {
     setAnswerType(q.answerType);
     setCorrectAnswer(q.correctAnswer);
     setExplanation(q.explanation || "");
-    setOptions(q.options ? JSON.parse(q.options) : [""]);
+    const opts = q.options ? (typeof q.options === "string" ? JSON.parse(q.options) : q.options) : [""];
+    setOptions(Array.isArray(opts) ? opts : [""]);
     setMediaUrl(q.mediaUrl || "");
     setMediaType(q.mediaType || "IMAGE");
-    setRelatedImages(q.relatedImages ? JSON.parse(q.relatedImages) : []);
+    const imgs = q.relatedImages ? (typeof q.relatedImages === "string" ? JSON.parse(q.relatedImages) : q.relatedImages) : [];
+    setRelatedImages(Array.isArray(imgs) ? imgs : []);
     if (q.expiresAt) {
       const d = new Date(q.expiresAt);
       const gt = new Date(d.toLocaleString("en-US", { timeZone: "America/Guatemala" }));

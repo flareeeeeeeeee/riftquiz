@@ -146,9 +146,9 @@ export default function QuizPage() {
           )}
 
           {/* Related card images */}
-          {q.relatedImages && q.relatedImages.length > 0 && (
+          {q.relatedImages && (
             <div className="mb-4 flex gap-2 overflow-x-auto pb-2">
-              {q.relatedImages.map((imgUrl, i) => (
+              {(Array.isArray(q.relatedImages) ? q.relatedImages : JSON.parse(q.relatedImages as unknown as string)).map((imgUrl: string, i: number) => (
                 <img
                   key={i}
                   src={imgUrl}

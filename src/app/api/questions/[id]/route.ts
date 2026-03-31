@@ -25,10 +25,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       mediaUrl: data.mediaUrl,
       mediaType: data.mediaType,
       answerType: data.answerType,
-      options: data.options ? JSON.stringify(data.options) : null,
+      options: data.options
+        ? (typeof data.options === "string" ? data.options : JSON.stringify(data.options))
+        : null,
       correctAnswer: data.correctAnswer,
       explanation: data.explanation,
-      relatedImages: data.relatedImages ? JSON.stringify(data.relatedImages) : null,
+      relatedImages: data.relatedImages
+        ? (typeof data.relatedImages === "string" ? data.relatedImages : JSON.stringify(data.relatedImages))
+        : null,
       expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
       order: data.order,
       active: data.active,
