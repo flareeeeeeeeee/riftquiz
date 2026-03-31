@@ -48,19 +48,17 @@ export default function NewQuestion() {
 
   const loadQuestion = useCallback(async () => {
     if (!editId) return;
-    const res = await fetch("/api/questions");
-    const questions = await res.json();
-    const q = questions.find((q: { id: string }) => q.id === editId);
-    if (q) {
-      setText(q.text);
-      setAnswerType(q.answerType);
-      setCorrectAnswer(q.correctAnswer);
-      setExplanation(q.explanation || "");
-      setOptions(q.options ? JSON.parse(q.options) : [""]);
-      setMediaUrl(q.mediaUrl || "");
-      setMediaType(q.mediaType || "IMAGE");
-      setRelatedImages(q.relatedImages ? JSON.parse(q.relatedImages) : []);
-    }
+    const res = await fetch(`/api/questions/${editId}`);
+    if (!res.ok) return;
+    const q = await res.json();
+    setText(q.text);
+    setAnswerType(q.answerType);
+    setCorrectAnswer(q.correctAnswer);
+    setExplanation(q.explanation || "");
+    setOptions(q.options ? JSON.parse(q.options) : [""]);
+    setMediaUrl(q.mediaUrl || "");
+    setMediaType(q.mediaType || "IMAGE");
+    setRelatedImages(q.relatedImages ? JSON.parse(q.relatedImages) : []);
   }, [editId]);
 
   useEffect(() => {
@@ -118,6 +116,7 @@ export default function NewQuestion() {
       mediaType,
       relatedImages: relatedImages.length > 0 ? relatedImages : null,
       order: 0,
+      active: true,
     };
 
     const url = editId ? `/api/questions/${editId}` : "/api/questions";

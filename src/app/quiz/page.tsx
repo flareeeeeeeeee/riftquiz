@@ -40,7 +40,7 @@ export default function QuizPage() {
     });
     const data = await res.json();
     setQuestions(data.questions);
-    setAttemptId(data.attempt.id);
+    if (data.attempt) setAttemptId(data.attempt.id);
     setLoading(false);
   }, [router]);
 

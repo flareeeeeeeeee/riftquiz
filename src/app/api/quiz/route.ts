@@ -9,10 +9,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "userId required" }, { status: 400 });
   }
 
+  // Find question IDs this user has already answered
+  const answeredIds = await prisma.quizAnswer.findMany({
+    where: {
+      attempt: { userId },
+    },
+    select: { questionId: true },
+    distinct: ["questionId"],
+  });
+
+  const answeredSet = new Set(answeredIds.map((a) => a.questionId));
+
   const questions = await prisma.question.findMany({
-    where: { active: true },
+    where: {
+      active: true,
+      id: { notIn: [...answeredSet] },
+    },
     orderBy: { order: "asc" },
   });
+
+  if (questions.length === 0) {
+    return NextResponse.json({ attempt: null, questions: [] });
+  }
 
   const attempt = await prisma.quizAttempt.create({
     data: {
