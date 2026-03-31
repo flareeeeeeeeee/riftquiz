@@ -3,35 +3,52 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAdmin } from "../../layout";
-import { storage } from "@/lib/firebase";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { v4 as uuid } from "uuid";
 
-function uploadFile(
+async function uploadFile(
   file: File,
+  password: string,
   onProgress: (pct: number) => void
 ): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const ext = file.name.split(".").pop();
-    const fileName = `rift-quiz/${uuid()}.${ext}`;
-    const storageRef = ref(storage, fileName);
-    const uploadTask = uploadBytesResumable(storageRef, file, {
-      contentType: file.type,
-    });
-
-    uploadTask.on(
-      "state_changed",
-      (snapshot) => {
-        const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-        onProgress(pct);
-      },
-      (error) => reject(error),
-      async () => {
-        const url = await getDownloadURL(uploadTask.snapshot.ref);
-        resolve(url);
-      }
-    );
+  // 1. Get signed URL from server
+  const params = new URLSearchParams({
+    fileName: file.name,
+    contentType: file.type,
   });
+  const res = await fetch(`/api/upload?${params}`, {
+    headers: { "x-admin-password": password },
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "Failed to get upload URL");
+  }
+  const { signedUrl, publicUrl, storagePath } = await res.json();
+
+  // 2. Upload directly to GCS with progress
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.upload.addEventListener("progress", (e) => {
+      if (e.lengthComputable) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    });
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else reject(new Error(`Upload failed (${xhr.status})`));
+    });
+    xhr.addEventListener("error", () => reject(new Error("Network error")));
+    xhr.open("PUT", signedUrl);
+    xhr.setRequestHeader("Content-Type", file.type);
+    xhr.send(file);
+  });
+
+  // 3. Make file public
+  await fetch("/api/upload", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-admin-password": password },
+    body: JSON.stringify({ storagePath }),
+  });
+
+  return publicUrl;
 }
 
 export default function NewQuestion() {
@@ -85,7 +102,7 @@ export default function NewQuestion() {
     setUploadError("");
 
     try {
-      const url = await uploadFile(file, setUploadProgress);
+      const url = await uploadFile(file, password, setUploadProgress);
       setMediaUrl(url);
       setMediaType(file.type.startsWith("video/") ? "VIDEO" : "IMAGE");
     } catch (err) {
@@ -104,7 +121,7 @@ export default function NewQuestion() {
     setUploadError("");
 
     try {
-      const url = await uploadFile(file, setRelatedProgress);
+      const url = await uploadFile(file, password, setRelatedProgress);
       setRelatedImages((prev) => [...prev, url]);
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : "Upload failed");
