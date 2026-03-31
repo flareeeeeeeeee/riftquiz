@@ -98,14 +98,8 @@ export default function QuizPage() {
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="bg-gray-900 rounded-2xl p-8 border border-gray-800 text-center max-w-md w-full">
           <h2 className="text-3xl font-bold mb-2">Quiz Completado!</h2>
-          <div className="text-6xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent my-6">
-            {score}/{questions.length}
-          </div>
           <p className="text-gray-400 mb-6">
-            {score === questions.length ? "Perfecto! Eres un experto!" :
-             score >= questions.length * 0.7 ? "Muy bien! Casi perfecto!" :
-             score >= questions.length * 0.5 ? "Nada mal, sigue practicando!" :
-             "Sigue estudiando las cartas!"}
+            Gracias por participar! Tus respuestas han sido registradas.
           </p>
           <button
             onClick={() => router.push("/")}
@@ -128,7 +122,7 @@ export default function QuizPage() {
         <div className="mb-6">
           <div className="flex justify-between text-sm text-gray-400 mb-1">
             <span>Pregunta {current + 1} de {questions.length}</span>
-            <span>Score: {score}</span>
+            <span>{Math.round(((current + 1) / questions.length) * 100)}%</span>
           </div>
           <div className="w-full bg-gray-800 rounded-full h-2">
             <div
@@ -225,16 +219,8 @@ export default function QuizPage() {
           {/* Feedback */}
           {feedback && (
             <div className="space-y-4">
-              <div className={`p-4 rounded-xl ${feedback.isCorrect ? "bg-green-900/30 border border-green-700" : "bg-red-900/30 border border-red-700"}`}>
-                <p className={`font-semibold text-lg ${feedback.isCorrect ? "text-green-400" : "text-red-400"}`}>
-                  {feedback.isCorrect ? "Correcto!" : "Incorrecto"}
-                </p>
-                {!feedback.isCorrect && (
-                  <p className="text-gray-300 mt-1">Respuesta correcta: {q.correctAnswer}</p>
-                )}
-                {feedback.explanation && (
-                  <p className="text-gray-400 mt-2 text-sm">{feedback.explanation}</p>
-                )}
+              <div className="p-4 rounded-xl bg-purple-900/30 border border-purple-700">
+                <p className="font-semibold text-lg text-purple-300">Gracias por responder!</p>
               </div>
 
               <button
