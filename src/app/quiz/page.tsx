@@ -63,22 +63,13 @@ export default function QuizPage() {
     const data = await res.json();
     setFeedback({ isCorrect: data.isCorrect, explanation: data.explanation });
     if (data.isCorrect) setScore((s) => s + 1);
+    // Complete the attempt immediately after answering
+    await fetch("/api/quiz/complete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ attemptId }),
+    });
     setSubmitting(false);
-  }
-
-  async function nextQuestion() {
-    setFeedback(null);
-    setAnswer("");
-    if (current + 1 >= questions.length) {
-      await fetch("/api/quiz/complete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ attemptId }),
-      });
-      setDone(true);
-    } else {
-      setCurrent((c) => c + 1);
-    }
   }
 
   if (loading) {
@@ -234,17 +225,9 @@ export default function QuizPage() {
 
           {/* Feedback */}
           {feedback && (
-            <div className="space-y-4">
-              <div className="p-4 rounded-xl bg-purple-900/30 border border-purple-700">
-                <p className="font-semibold text-lg text-purple-300">Gracias por responder!</p>
-              </div>
-
-              <button
-                onClick={nextQuestion}
-                className="w-full py-3 rounded-xl bg-gray-800 border border-gray-700 text-white font-semibold hover:bg-gray-700 transition"
-              >
-                Siguiente
-              </button>
+            <div className="p-4 rounded-xl bg-purple-900/30 border border-purple-700">
+              <p className="font-semibold text-lg text-purple-300">Gracias por responder!</p>
+              <p className="text-gray-400 text-sm mt-1">Tu respuesta ha sido registrada.</p>
             </div>
           )}
         </div>
