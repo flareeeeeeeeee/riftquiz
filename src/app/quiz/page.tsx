@@ -114,7 +114,9 @@ export default function QuizPage() {
   }
 
   const q = questions[current];
-  const options: string[] = q.options ? JSON.parse(q.options) : [];
+  const parsedOptions: string[] = q.options
+    ? (typeof q.options === "string" ? JSON.parse(q.options) : q.options)
+    : [];
 
   return (
     <main className="flex-1 flex flex-col items-center justify-center p-4">
@@ -148,7 +150,7 @@ export default function QuizPage() {
           {/* Related card images */}
           {q.relatedImages && (
             <div className="mb-4 flex gap-2 overflow-x-auto pb-2">
-              {(JSON.parse(q.relatedImages) as string[]).map((imgUrl, i) => (
+              {(typeof q.relatedImages === "string" ? JSON.parse(q.relatedImages) : q.relatedImages).map((imgUrl: string, i: number) => (
                 <img
                   key={i}
                   src={imgUrl}
@@ -185,7 +187,7 @@ export default function QuizPage() {
 
               {q.answerType === "MULTIPLE_CHOICE" && (
                 <div className="grid gap-3">
-                  {options.map((opt, i) => (
+                  {parsedOptions.map((opt, i) => (
                     <button
                       key={i}
                       onClick={() => setAnswer(opt.toLowerCase())}
