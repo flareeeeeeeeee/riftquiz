@@ -58,6 +58,29 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   const { attemptId, questionId, answer } = await req.json();
 
+  // Get the attempt to know the userId
+  const attempt = await prisma.quizAttempt.findUnique({ where: { id: attemptId } });
+  if (!attempt) {
+    return NextResponse.json({ error: "Attempt not found" }, { status: 404 });
+  }
+
+  // Check if this user already answered this question in ANY attempt
+  const existing = await prisma.quizAnswer.findFirst({
+    where: {
+      questionId,
+      attempt: { userId: attempt.userId },
+    },
+  });
+
+  if (existing) {
+    return NextResponse.json({
+      id: existing.id,
+      isCorrect: existing.isCorrect,
+      explanation: null,
+      alreadyAnswered: true,
+    });
+  }
+
   const question = await prisma.question.findUnique({ where: { id: questionId } });
   if (!question) {
     return NextResponse.json({ error: "Question not found" }, { status: 404 });
@@ -65,10 +88,8 @@ export async function PUT(req: NextRequest) {
 
   const isCorrect = checkAnswer(question.correctAnswer, answer, question.answerType);
 
-  const quizAnswer = await prisma.quizAnswer.upsert({
-    where: { attemptId_questionId: { attemptId, questionId } },
-    update: { answer: String(answer), isCorrect },
-    create: {
+  const quizAnswer = await prisma.quizAnswer.create({
+    data: {
       attemptId,
       questionId,
       answer: String(answer),
