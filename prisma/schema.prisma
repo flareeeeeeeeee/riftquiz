@@ -29,6 +29,7 @@ model Question {
   options       String?    @db.Text
   correctAnswer String     @map("correct_answer") @db.Text
   explanation   String?    @db.Text
+  relatedImages String?    @map("related_images") @db.Text
   order         Int        @default(0)
   active        Boolean    @default(true)
   createdAt     DateTime   @default(now()) @map("created_at")

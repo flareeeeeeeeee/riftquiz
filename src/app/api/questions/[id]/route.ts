@@ -19,6 +19,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       options: data.options ? JSON.stringify(data.options) : null,
       correctAnswer: data.correctAnswer,
       explanation: data.explanation,
+      relatedImages: data.relatedImages ? JSON.stringify(data.relatedImages) : null,
       order: data.order,
       active: data.active,
     },

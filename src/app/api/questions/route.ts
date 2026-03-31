@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
       options: data.options ? JSON.stringify(data.options) : null,
       correctAnswer: data.correctAnswer,
       explanation: data.explanation || null,
+      relatedImages: data.relatedImages ? JSON.stringify(data.relatedImages) : null,
       order: data.order || 0,
     },
   });

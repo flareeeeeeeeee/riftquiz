@@ -12,6 +12,7 @@ interface Question {
   options: string | null;
   correctAnswer: string;
   explanation: string | null;
+  relatedImages: string | null;
 }
 
 export default function QuizPage() {
@@ -137,10 +138,24 @@ export default function QuizPage() {
           {q.mediaUrl && (
             <div className="mb-4 rounded-xl overflow-hidden">
               {q.mediaType === "VIDEO" ? (
-                <video src={q.mediaUrl} controls className="w-full max-h-80 object-contain bg-black" />
+                <video src={q.mediaUrl} controls muted className="w-full max-h-80 object-contain bg-black" />
               ) : (
                 <img src={q.mediaUrl} alt="Card" className="w-full max-h-80 object-contain" />
               )}
+            </div>
+          )}
+
+          {/* Related card images */}
+          {q.relatedImages && (
+            <div className="mb-4 flex gap-2 overflow-x-auto pb-2">
+              {(JSON.parse(q.relatedImages) as string[]).map((imgUrl, i) => (
+                <img
+                  key={i}
+                  src={imgUrl}
+                  alt={`Carta ${i + 1}`}
+                  className="h-40 rounded-lg border border-gray-700 flex-shrink-0 object-cover"
+                />
+              ))}
             </div>
           )}
 

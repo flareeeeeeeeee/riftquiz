@@ -3,6 +3,36 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAdmin } from "../../layout";
+import { storage } from "@/lib/firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { v4 as uuid } from "uuid";
+
+function uploadFile(
+  file: File,
+  onProgress: (pct: number) => void
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const ext = file.name.split(".").pop();
+    const fileName = `rift-quiz/${uuid()}.${ext}`;
+    const storageRef = ref(storage, fileName);
+    const uploadTask = uploadBytesResumable(storageRef, file, {
+      contentType: file.type,
+    });
+
+    uploadTask.on(
+      "state_changed",
+      (snapshot) => {
+        const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+        onProgress(pct);
+      },
+      (error) => reject(error),
+      async () => {
+        const url = await getDownloadURL(uploadTask.snapshot.ref);
+        resolve(url);
+      }
+    );
+  });
+}
 
 export default function NewQuestion() {
   const { password } = useAdmin();
@@ -17,9 +47,13 @@ export default function NewQuestion() {
   const [options, setOptions] = useState<string[]>([""]);
   const [mediaUrl, setMediaUrl] = useState("");
   const [mediaType, setMediaType] = useState<string>("IMAGE");
-  const [order, setOrder] = useState(0);
+  const [relatedImages, setRelatedImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadingRelated, setUploadingRelated] = useState(false);
+  const [relatedProgress, setRelatedProgress] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
   const loadQuestion = useCallback(async () => {
     if (!editId) return;
@@ -34,7 +68,7 @@ export default function NewQuestion() {
       setOptions(q.options ? JSON.parse(q.options) : [""]);
       setMediaUrl(q.mediaUrl || "");
       setMediaType(q.mediaType || "IMAGE");
-      setOrder(q.order);
+      setRelatedImages(q.relatedImages ? JSON.parse(q.relatedImages) : []);
     }
   }, [editId]);
 
@@ -47,21 +81,36 @@ export default function NewQuestion() {
     if (!file) return;
 
     setUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
+    setUploadProgress(0);
+    setUploadError("");
 
-    const res = await fetch("/api/upload", {
-      method: "POST",
-      headers: { "x-admin-password": password },
-      body: formData,
-    });
-
-    const data = await res.json();
-    if (data.url) {
-      setMediaUrl(data.url);
+    try {
+      const url = await uploadFile(file, setUploadProgress);
+      setMediaUrl(url);
       setMediaType(file.type.startsWith("video/") ? "VIDEO" : "IMAGE");
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
     }
-    setUploading(false);
+  }
+
+  async function handleRelatedUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingRelated(true);
+    setRelatedProgress(0);
+    setUploadError("");
+
+    try {
+      const url = await uploadFile(file, setRelatedProgress);
+      setRelatedImages((prev) => [...prev, url]);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploadingRelated(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -76,7 +125,8 @@ export default function NewQuestion() {
       options: answerType === "MULTIPLE_CHOICE" ? options.filter((o) => o.trim()) : null,
       mediaUrl: mediaUrl || null,
       mediaType,
-      order,
+      relatedImages: relatedImages.length > 0 ? relatedImages : null,
+      order: 0,
     };
 
     const url = editId ? `/api/questions/${editId}` : "/api/questions";
@@ -114,7 +164,7 @@ export default function NewQuestion() {
           <label className="block text-sm text-gray-400 mb-1">Media (imagen o video)</label>
           <div className="flex gap-3 items-start">
             <label className="px-4 py-2 rounded-xl bg-gray-800 border border-gray-700 text-gray-300 text-sm cursor-pointer hover:bg-gray-700 transition">
-              {uploading ? "Subiendo..." : "Subir archivo"}
+              {uploading ? `Subiendo... ${uploadProgress}%` : "Subir archivo"}
               <input
                 type="file"
                 accept="image/*,video/*"
@@ -127,7 +177,7 @@ export default function NewQuestion() {
               <div className="flex-1">
                 <div className="rounded-xl overflow-hidden bg-gray-800 max-h-48">
                   {mediaType === "VIDEO" ? (
-                    <video src={mediaUrl} controls className="max-h-48 object-contain" />
+                    <video src={mediaUrl} controls muted className="max-h-48 object-contain" />
                   ) : (
                     <img src={mediaUrl} alt="Preview" className="max-h-48 object-contain" />
                   )}
@@ -142,7 +192,60 @@ export default function NewQuestion() {
               </div>
             )}
           </div>
+          {uploading && (
+            <div className="mt-2 w-full bg-gray-800 rounded-full h-2">
+              <div
+                className="bg-gradient-to-r from-purple-500 to-cyan-500 h-2 rounded-full transition-all"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+          )}
         </div>
+
+        {/* Related card images */}
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">Cartas relacionadas (imagenes)</label>
+          <div className="flex flex-wrap gap-3 mb-2">
+            {relatedImages.map((imgUrl, i) => (
+              <div key={i} className="relative group">
+                <img
+                  src={imgUrl}
+                  alt={`Carta ${i + 1}`}
+                  className="w-24 h-32 object-cover rounded-lg border border-gray-700"
+                />
+                <button
+                  type="button"
+                  onClick={() => setRelatedImages(relatedImages.filter((_, j) => j !== i))}
+                  className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                >
+                  x
+                </button>
+              </div>
+            ))}
+          </div>
+          <label className="inline-block px-4 py-2 rounded-xl bg-gray-800 border border-gray-700 text-gray-300 text-sm cursor-pointer hover:bg-gray-700 transition">
+            {uploadingRelated ? `Subiendo... ${relatedProgress}%` : "+ Agregar carta"}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleRelatedUpload}
+              className="hidden"
+              disabled={uploadingRelated}
+            />
+          </label>
+          {uploadingRelated && (
+            <div className="mt-2 w-full bg-gray-800 rounded-full h-2">
+              <div
+                className="bg-gradient-to-r from-purple-500 to-cyan-500 h-2 rounded-full transition-all"
+                style={{ width: `${relatedProgress}%` }}
+              />
+            </div>
+          )}
+        </div>
+
+        {uploadError && (
+          <p className="text-red-400 text-sm">{uploadError}</p>
+        )}
 
         {/* Answer type */}
         <div>
@@ -275,7 +378,7 @@ export default function NewQuestion() {
         <div className="flex gap-3">
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || uploading || uploadingRelated}
             className="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-600 text-white font-semibold hover:from-purple-500 hover:to-cyan-500 transition disabled:opacity-50"
           >
             {saving ? "Guardando..." : editId ? "Actualizar" : "Crear Pregunta"}
