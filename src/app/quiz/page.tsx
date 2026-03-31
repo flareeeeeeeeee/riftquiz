@@ -152,7 +152,7 @@ export default function QuizPage() {
           })()}
 
           {/* Question */}
-          <h2 className="text-xl font-semibold mb-6 whitespace-pre-line">{q.text}</h2>
+          <h2 className="text-base font-semibold mb-6 whitespace-pre-line">{q.text}</h2>
 
           {/* Answer input */}
           {!feedback && (
