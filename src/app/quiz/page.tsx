@@ -25,6 +25,7 @@ export default function QuizPage() {
   const [score, setScore] = useState(0);
   const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
 
   const startQuiz = useCallback(async () => {
     const stored = localStorage.getItem("quizUser");
@@ -119,19 +120,7 @@ export default function QuizPage() {
   return (
     <main className="flex-1 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-2xl">
-        {/* Progress bar */}
-        <div className="mb-6">
-          <div className="flex justify-between text-sm text-gray-400 mb-1">
-            <span>Pregunta {current + 1} de {questions.length}</span>
-            <span>{Math.round(((current + 1) / questions.length) * 100)}%</span>
-          </div>
-          <div className="w-full bg-gray-800 rounded-full h-2">
-            <div
-              className="bg-gradient-to-r from-purple-500 to-cyan-500 h-2 rounded-full transition-all"
-              style={{ width: `${((current + 1) / questions.length) * 100}%` }}
-            />
-          </div>
-        </div>
+        <p className="text-sm text-gray-400 mb-4">Pregunta #{current + 1}</p>
 
         <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800">
           {/* Media */}
@@ -146,18 +135,22 @@ export default function QuizPage() {
           )}
 
           {/* Related card images */}
-          {q.relatedImages && (
-            <div className="mb-4 flex gap-2 overflow-x-auto pb-2">
-              {(Array.isArray(q.relatedImages) ? q.relatedImages : JSON.parse(q.relatedImages as unknown as string)).map((imgUrl: string, i: number) => (
-                <img
-                  key={i}
-                  src={imgUrl}
-                  alt={`Carta ${i + 1}`}
-                  className="h-40 max-w-56 object-contain rounded-lg border border-gray-700 bg-gray-800 flex-shrink-0"
-                />
-              ))}
-            </div>
-          )}
+          {q.relatedImages && (() => {
+            const imgs = Array.isArray(q.relatedImages) ? q.relatedImages : JSON.parse(q.relatedImages as unknown as string);
+            return (
+              <div className="mb-4 flex gap-2 overflow-x-auto pb-2">
+                {imgs.map((imgUrl: string, i: number) => (
+                  <img
+                    key={i}
+                    src={imgUrl}
+                    alt={`Carta ${i + 1}`}
+                    onClick={() => setLightbox({ images: imgs, index: i })}
+                    className="h-40 max-w-56 object-contain rounded-lg border border-gray-700 bg-gray-800 flex-shrink-0 cursor-pointer hover:border-purple-500 transition"
+                  />
+                ))}
+              </div>
+            );
+          })()}
 
           {/* Question */}
           <h2 className="text-xl font-semibold mb-6">{q.text}</h2>
@@ -248,6 +241,42 @@ export default function QuizPage() {
           )}
         </div>
       </div>
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+          onClick={() => setLightbox(null)}
+        >
+          <button
+            onClick={(e) => { e.stopPropagation(); setLightbox({ ...lightbox, index: (lightbox.index - 1 + lightbox.images.length) % lightbox.images.length }); }}
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 text-white text-2xl flex items-center justify-center hover:bg-white/20 transition"
+          >
+            &lt;
+          </button>
+          <img
+            src={lightbox.images[lightbox.index]}
+            alt={`Carta ${lightbox.index + 1}`}
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[85vh] max-w-[90vw] object-contain rounded-xl"
+          />
+          <button
+            onClick={(e) => { e.stopPropagation(); setLightbox({ ...lightbox, index: (lightbox.index + 1) % lightbox.images.length }); }}
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 text-white text-2xl flex items-center justify-center hover:bg-white/20 transition"
+          >
+            &gt;
+          </button>
+          <button
+            onClick={() => setLightbox(null)}
+            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 text-white text-xl flex items-center justify-center hover:bg-white/20 transition"
+          >
+            x
+          </button>
+          <div className="absolute bottom-6 text-gray-400 text-sm">
+            {lightbox.index + 1} / {lightbox.images.length}
+          </div>
+        </div>
+      )}
     </main>
   );
 }
