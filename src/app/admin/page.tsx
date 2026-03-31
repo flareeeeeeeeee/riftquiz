@@ -80,9 +80,6 @@ export default function AdminQuestions() {
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-white truncate">{q.text}</p>
-                <p className="text-gray-500 text-xs mt-1 no-underline decoration-0">
-                  {q.answerType} &middot; Respuesta: {q.correctAnswer}
-                </p>
               </div>
               <div className="flex items-center gap-2">
                 <button
