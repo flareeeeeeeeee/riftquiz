@@ -7,6 +7,7 @@ export default function Home() {
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [error, setError] = useState("");
   const router = useRouter();
 
@@ -14,8 +15,18 @@ export default function Home() {
     const stored = localStorage.getItem("quizUser");
     if (stored) {
       router.push("/quiz");
+    } else {
+      setChecking(false);
     }
   }, [router]);
+
+  if (checking) {
+    return (
+      <main className="flex-1 flex items-center justify-center">
+        <div className="text-gray-400 text-lg">Cargando...</div>
+      </main>
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

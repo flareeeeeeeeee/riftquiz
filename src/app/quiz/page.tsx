@@ -27,6 +27,7 @@ export default function QuizPage() {
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [userName, setUserName] = useState("");
 
   const startQuiz = useCallback(async () => {
     const stored = localStorage.getItem("quizUser");
@@ -35,6 +36,7 @@ export default function QuizPage() {
       return;
     }
     const user = JSON.parse(stored);
+    setUserName(user.name || "");
     const res = await fetch("/api/quiz", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -123,7 +125,10 @@ export default function QuizPage() {
   return (
     <main className="flex-1 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-2xl">
-        <p className="text-sm text-gray-400 mb-4">Pregunta #{current + 1}</p>
+        <div className="flex justify-between items-center mb-4">
+          <p className="text-sm text-gray-400">Pregunta #{current + 1}</p>
+          {userName && <p className="text-sm text-purple-400">{userName}</p>}
+        </div>
 
         <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800">
           {/* Media */}
