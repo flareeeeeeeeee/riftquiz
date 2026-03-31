@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
-  const [riotId, setRiotId] = useState("");
+  const [phone, setPhone] = useState("");
+  const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState("");
@@ -17,6 +18,7 @@ export default function Home() {
         router.push("/quiz");
         return;
       }
+      // Try to find user by IP
       try {
         const res = await fetch("/api/me");
         const user = await res.json();
@@ -48,7 +50,7 @@ export default function Home() {
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ riotId }),
+        body: JSON.stringify({ phone, name }),
       });
 
       if (!res.ok) {
@@ -78,13 +80,25 @@ export default function Home() {
 
         <form onSubmit={handleSubmit} className="bg-gray-900 rounded-2xl p-6 space-y-4 border border-gray-800">
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Riot ID</label>
+            <label className="block text-sm text-gray-400 mb-1">Tu nombre</label>
             <input
               type="text"
-              value={riotId}
-              onChange={(e) => setRiotId(e.target.value)}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               required
-              placeholder="Nombre#TAG"
+              placeholder="Ingresa tu nombre"
+              className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Numero de telefono</label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              required
+              placeholder="5555-1234"
               className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition"
             />
           </div>

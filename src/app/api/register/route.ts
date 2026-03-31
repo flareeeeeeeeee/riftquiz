@@ -2,45 +2,42 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
-  const { riotId } = await req.json();
+  const { phone, name } = await req.json();
 
-  if (!riotId) {
-    return NextResponse.json({ error: "Riot ID requerido" }, { status: 400 });
+  if (!phone || !name) {
+    return NextResponse.json({ error: "Phone and name required" }, { status: 400 });
   }
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
              req.headers.get("x-real-ip") ||
              "unknown";
 
-  // Check if this IP already has a user
-  const existingIp = await prisma.quizUser.findFirst({ where: { ip } });
+  // Check if this IP is already used by a different phone number
+  const existingIp = await prisma.quizUser.findFirst({
+    where: { ip, NOT: { phone } },
+  });
+
   if (existingIp) {
-    // Update name if same IP
-    const user = await prisma.quizUser.update({
-      where: { id: existingIp.id },
-      data: { name: riotId },
-    });
-    return NextResponse.json(user);
+    return NextResponse.json(
+      { error: "Este dispositivo ya esta registrado con otro numero" },
+      { status: 409 }
+    );
   }
 
-  // Check if this Riot ID already exists
-  const existingName = await prisma.quizUser.findFirst({
-    where: { name: riotId },
-  });
+  // Find existing user by phone (might be on a new device/IP)
+  let user = await prisma.quizUser.findFirst({ where: { phone } });
 
-  if (existingName) {
-    // Update IP
-    const user = await prisma.quizUser.update({
-      where: { id: existingName.id },
-      data: { ip },
+  if (user) {
+    // Update IP and name if they changed devices
+    user = await prisma.quizUser.update({
+      where: { id: user.id },
+      data: { ip, name },
     });
-    return NextResponse.json(user);
+  } else {
+    user = await prisma.quizUser.create({
+      data: { phone, name, ip },
+    });
   }
-
-  // Create new user
-  const user = await prisma.quizUser.create({
-    data: { name: riotId, phone: ip, ip },
-  });
 
   return NextResponse.json(user);
 }
