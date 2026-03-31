@@ -153,7 +153,7 @@ export default function QuizPage() {
                   key={i}
                   src={imgUrl}
                   alt={`Carta ${i + 1}`}
-                  className="h-40 rounded-lg border border-gray-700 flex-shrink-0 object-cover"
+                  className="h-40 max-w-56 object-contain rounded-lg border border-gray-700 bg-gray-800 flex-shrink-0"
                 />
               ))}
             </div>

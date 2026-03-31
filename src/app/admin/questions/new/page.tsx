@@ -202,7 +202,7 @@ export default function NewQuestion() {
                 <img
                   src={imgUrl}
                   alt={`Carta ${i + 1}`}
-                  className="w-24 h-32 object-cover rounded-lg border border-gray-700"
+                  className="h-32 max-w-48 object-contain rounded-lg border border-gray-700 bg-gray-800"
                 />
                 <button
                   type="button"
