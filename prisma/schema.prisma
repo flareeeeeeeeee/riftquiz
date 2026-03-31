@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model QuizUser {
+  id        String   @id @default(cuid())
+  phone     String
+  name      String
+  ip        String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  attempts QuizAttempt[]
+
+  @@unique([phone, ip])
+  @@map("quiz_user")
+}
+
+model Question {
+  id            String     @id @default(cuid())
+  text          String     @db.Text
+  mediaUrl      String?    @map("media_url") @db.Text
+  mediaType     MediaType  @default(IMAGE) @map("media_type")
+  answerType    AnswerType @map("answer_type")
+  options       String?    @db.Text
+  correctAnswer String     @map("correct_answer") @db.Text
+  explanation   String?    @db.Text
+  order         Int        @default(0)
+  active        Boolean    @default(true)
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  answers QuizAnswer[]
+
+  @@map("question")
+}
+
+model QuizAttempt {
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  score       Int       @default(0)
+  totalQ      Int       @default(0) @map("total_questions")
+  startedAt   DateTime  @default(now()) @map("started_at")
+  completedAt DateTime? @map("completed_at")
+
+  user    QuizUser     @relation(fields: [userId], references: [id])
+  answers QuizAnswer[]
+
+  @@map("quiz_attempt")
+}
+
+model QuizAnswer {
+  id         String  @id @default(cuid())
+  attemptId  String  @map("attempt_id")
+  questionId String  @map("question_id")
+  answer     String  @db.Text
+  isCorrect  Boolean @default(false) @map("is_correct")
+
+  attempt  QuizAttempt @relation(fields: [attemptId], references: [id])
+  question Question    @relation(fields: [questionId], references: [id])
+
+  @@unique([attemptId, questionId])
+  @@map("quiz_answer")
+}
+
+enum AnswerType {
+  YES_NO
+  TEXT
+  NUMBER
+  MULTIPLE_CHOICE
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
