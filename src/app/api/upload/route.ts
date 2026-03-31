@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     const storagePath = `rift-quiz/${uuid()}.${ext}`;
 
     const file = bucket.file(storagePath);
-    const [signedUrl] = await file.generateSignedUrl({
+    const [signedUrl] = await file.getSignedUrl({
       version: "v4",
       action: "write",
       expires: Date.now() + 15 * 60 * 1000, // 15 minutes
