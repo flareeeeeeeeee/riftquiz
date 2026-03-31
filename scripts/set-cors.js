@@ -16,13 +16,26 @@ const bucket = getStorage().bucket();
 async function setCors() {
   await bucket.setCorsConfiguration([
     {
-      origin: ["*"],
-      method: ["GET", "POST", "PUT", "DELETE", "HEAD"],
+      origin: [
+        "https://dq-eight.vercel.app",
+        "http://localhost:3000",
+        "https://*.vercel.app",
+      ],
+      method: ["GET", "PUT", "POST", "DELETE", "HEAD", "OPTIONS"],
       maxAgeSeconds: 3600,
-      responseHeader: ["Content-Type", "Authorization", "Content-Length", "x-goog-resumable"],
+      responseHeader: [
+        "Content-Type",
+        "Content-Length",
+        "Content-Range",
+        "x-goog-resumable",
+        "x-goog-content-length-range",
+      ],
     },
   ]);
-  console.log("CORS configured successfully!");
+
+  // Verify
+  const [metadata] = await bucket.getMetadata();
+  console.log("CORS configured:", JSON.stringify(metadata.cors, null, 2));
 }
 
 setCors().catch(console.error);
