@@ -26,6 +26,7 @@ export default function QuizPage() {
   const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const startQuiz = useCallback(async () => {
     const stored = localStorage.getItem("quizUser");
@@ -50,7 +51,8 @@ export default function QuizPage() {
   }, [startQuiz]);
 
   async function submitAnswer() {
-    if (!answer) return;
+    if (!answer || submitting) return;
+    setSubmitting(true);
     const res = await fetch("/api/quiz", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -59,6 +61,7 @@ export default function QuizPage() {
     const data = await res.json();
     setFeedback({ isCorrect: data.isCorrect, explanation: data.explanation });
     if (data.isCorrect) setScore((s) => s + 1);
+    setSubmitting(false);
   }
 
   async function nextQuestion() {
@@ -216,10 +219,10 @@ export default function QuizPage() {
 
               <button
                 onClick={submitAnswer}
-                disabled={!answer}
+                disabled={!answer || submitting}
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-600 text-white font-semibold hover:from-purple-500 hover:to-cyan-500 transition disabled:opacity-50"
               >
-                Responder
+                {submitting ? "Guardando..." : "Responder"}
               </button>
             </div>
           )}
@@ -235,7 +238,7 @@ export default function QuizPage() {
                 onClick={nextQuestion}
                 className="w-full py-3 rounded-xl bg-gray-800 border border-gray-700 text-white font-semibold hover:bg-gray-700 transition"
               >
-                {current + 1 >= questions.length ? "Ver resultado" : "Siguiente pregunta"}
+                Siguiente
               </button>
             </div>
           )}

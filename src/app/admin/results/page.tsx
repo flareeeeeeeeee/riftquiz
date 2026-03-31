@@ -3,31 +3,22 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAdmin } from "../layout";
 
-interface Attempt {
-  id: string;
-  score: number;
-  totalQ: number;
-  startedAt: string;
-  completedAt: string;
-  user: { name: string; phone: string };
-  answers: {
-    answer: string;
-    isCorrect: boolean;
-    question: { text: string; correctAnswer: string };
-  }[];
+interface MatrixData {
+  questions: { id: string; text: string }[];
+  users: { id: string; name: string; phone: string }[];
+  answerMap: Record<string, Record<string, boolean>>;
 }
 
 export default function ResultsPage() {
   const { password } = useAdmin();
-  const [attempts, setAttempts] = useState<Attempt[]>([]);
+  const [data, setData] = useState<MatrixData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState<string | null>(null);
 
   const fetchResults = useCallback(async () => {
     const res = await fetch("/api/results", {
       headers: { "x-admin-password": password },
     });
-    if (res.ok) setAttempts(await res.json());
+    if (res.ok) setData(await res.json());
     setLoading(false);
   }, [password]);
 
@@ -36,53 +27,81 @@ export default function ResultsPage() {
   }, [fetchResults]);
 
   if (loading) return <p className="text-gray-400">Cargando resultados...</p>;
+  if (!data) return <p className="text-gray-500">Error cargando datos.</p>;
+
+  const { questions, users, answerMap } = data;
+
+  // Count correct per user
+  function userScore(userId: string) {
+    const map = answerMap[userId] || {};
+    return Object.values(map).filter(Boolean).length;
+  }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Resultados ({attempts.length})</h1>
+      <h1 className="text-2xl font-bold mb-6">
+        Resultados ({users.length} usuarios, {questions.length} preguntas)
+      </h1>
 
-      {attempts.length === 0 ? (
-        <p className="text-gray-500">Nadie ha completado el quiz aun.</p>
+      {users.length === 0 ? (
+        <p className="text-gray-500">Nadie ha respondido aun.</p>
       ) : (
-        <div className="space-y-3">
-          {attempts.map((a) => (
-            <div key={a.id} className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-              <button
-                onClick={() => setExpanded(expanded === a.id ? null : a.id)}
-                className="w-full p-4 flex items-center gap-4 text-left hover:bg-gray-800/50 transition"
-              >
-                <div className={`text-2xl font-bold ${
-                  a.score === a.totalQ ? "text-green-400" :
-                  a.score >= a.totalQ * 0.7 ? "text-yellow-400" : "text-red-400"
-                }`}>
-                  {a.score}/{a.totalQ}
-                </div>
-                <div className="flex-1">
-                  <p className="text-white font-medium">{a.user.name}</p>
-                  <p className="text-gray-500 text-xs">{a.user.phone} &middot; {new Date(a.completedAt).toLocaleString()}</p>
-                </div>
-                <span className="text-gray-500 text-sm">{expanded === a.id ? "▲" : "▼"}</span>
-              </button>
-
-              {expanded === a.id && (
-                <div className="px-4 pb-4 space-y-2">
-                  {a.answers.map((ans, i) => (
-                    <div key={i} className={`p-3 rounded-lg text-sm ${ans.isCorrect ? "bg-green-900/20" : "bg-red-900/20"}`}>
-                      <p className="text-gray-300">{ans.question.text}</p>
-                      <div className="flex gap-4 mt-1">
-                        <span className={ans.isCorrect ? "text-green-400" : "text-red-400"}>
-                          Respuesta: {ans.answer}
-                        </span>
-                        {!ans.isCorrect && (
-                          <span className="text-gray-500">Correcta: {ans.question.correctAnswer}</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+        <div className="overflow-x-auto">
+          <table className="border-collapse text-sm">
+            <thead>
+              <tr>
+                <th className="sticky left-0 z-10 bg-gray-950 px-3 py-2 text-left text-gray-400 font-medium border-b border-gray-800 min-w-[160px]">
+                  Nombre
+                </th>
+                {questions.map((q, i) => (
+                  <th
+                    key={q.id}
+                    title={q.text}
+                    className="px-2 py-2 text-center text-gray-400 font-medium border-b border-gray-800 min-w-[40px]"
+                  >
+                    {i + 1}
+                  </th>
+                ))}
+                <th className="px-3 py-2 text-center text-gray-400 font-medium border-b border-gray-800">
+                  Total
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((u) => {
+                const map = answerMap[u.id] || {};
+                const score = userScore(u.id);
+                return (
+                  <tr key={u.id} className="border-b border-gray-800/50 hover:bg-gray-900/50">
+                    <td className="sticky left-0 z-10 bg-gray-950 px-3 py-2 text-white font-medium whitespace-nowrap">
+                      {u.name}
+                      <span className="text-gray-600 text-xs ml-2">{u.phone}</span>
+                    </td>
+                    {questions.map((q) => {
+                      const answered = q.id in map;
+                      const correct = map[q.id];
+                      return (
+                        <td key={q.id} className="px-1 py-1 text-center">
+                          <div
+                            className={`w-8 h-8 rounded mx-auto ${
+                              !answered
+                                ? "bg-gray-800"
+                                : correct
+                                ? "bg-green-600"
+                                : "bg-red-600"
+                            }`}
+                          />
+                        </td>
+                      );
+                    })}
+                    <td className="px-3 py-2 text-center font-bold text-white">
+                      {score}/{questions.length}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
