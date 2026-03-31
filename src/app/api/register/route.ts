@@ -12,18 +12,6 @@ export async function POST(req: NextRequest) {
              req.headers.get("x-real-ip") ||
              "unknown";
 
-  // Check if this IP is already used by a different phone number
-  const existingIp = await prisma.quizUser.findFirst({
-    where: { ip, NOT: { phone } },
-  });
-
-  if (existingIp) {
-    return NextResponse.json(
-      { error: "Este dispositivo ya esta registrado con otro numero" },
-      { status: 409 }
-    );
-  }
-
   // Find existing user by phone (might be on a new device/IP)
   let user = await prisma.quizUser.findFirst({ where: { phone } });
 
@@ -39,5 +27,12 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  return NextResponse.json(user);
+  const res = NextResponse.json(user);
+  res.cookies.set("quizUserId", user.id, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+  });
+  return res;
 }
