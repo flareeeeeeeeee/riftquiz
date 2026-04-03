@@ -16,16 +16,46 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     const saved = sessionStorage.getItem("adminPassword");
     if (saved) {
-      setPassword(saved);
-      setAuthenticated(true);
+      fetch("/api/auth/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: saved }),
+      }).then((res) => {
+        if (res.ok) {
+          setPassword(saved);
+          setAuthenticated(true);
+        } else {
+          sessionStorage.removeItem("adminPassword");
+        }
+      });
     }
   }, []);
 
-  function handleLogin(e: React.FormEvent) {
+  const [error, setError] = useState("");
+  const [checking, setChecking] = useState(false);
+
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    sessionStorage.setItem("adminPassword", input);
-    setPassword(input);
-    setAuthenticated(true);
+    setError("");
+    setChecking(true);
+    try {
+      const res = await fetch("/api/auth/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: input }),
+      });
+      if (!res.ok) {
+        setError("Password incorrecto");
+        return;
+      }
+      sessionStorage.setItem("adminPassword", input);
+      setPassword(input);
+      setAuthenticated(true);
+    } catch {
+      setError("Error de conexión");
+    } finally {
+      setChecking(false);
+    }
   }
 
   if (!authenticated) {
@@ -40,11 +70,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             placeholder="Password"
             className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition"
           />
+          {error && <p className="text-red-400 text-sm text-center">{error}</p>}
           <button
             type="submit"
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-600 text-white font-semibold"
+            disabled={checking}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-600 text-white font-semibold disabled:opacity-50"
           >
-            Entrar
+            {checking ? "Verificando..." : "Entrar"}
           </button>
         </form>
       </main>
