@@ -19,6 +19,8 @@ export default function ResultsPage() {
   const [data, setData] = useState<MatrixData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<{ userName: string; questionText: string; answer: string; correct: boolean } | null>(null);
+  const [sortBy, setSortBy] = useState<"name" | "score">("score");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const fetchResults = useCallback(async () => {
     const res = await fetch("/api/results", {
@@ -42,6 +44,23 @@ export default function ResultsPage() {
     return Object.values(map).filter((a) => a.isCorrect).length;
   }
 
+  function toggleSort(col: "name" | "score") {
+    if (sortBy === col) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortBy(col); setSortDir(col === "score" ? "desc" : "asc"); }
+  }
+
+  const sortArrow = (col: "name" | "score") =>
+    sortBy === col ? (sortDir === "asc" ? " ▲" : " ▼") : "";
+
+  const sortedUsers = [...users].sort((a, b) => {
+    const dir = sortDir === "asc" ? 1 : -1;
+    if (sortBy === "score") {
+      const diff = userScore(a.id) - userScore(b.id);
+      return diff !== 0 ? diff * dir : a.name.localeCompare(b.name);
+    }
+    return a.name.localeCompare(b.name) * dir;
+  });
+
   return (
     <div>
       <div className="flex items-center gap-4 mb-6">
@@ -63,8 +82,11 @@ export default function ResultsPage() {
           <table className="border-collapse text-sm">
             <thead>
               <tr>
-                <th className="sticky left-0 z-10 bg-gray-950 px-3 py-2 text-left text-gray-400 font-medium border-b border-gray-800 min-w-[160px]">
-                  Nombre
+                <th
+                  onClick={() => toggleSort("name")}
+                  className="sticky left-0 z-10 bg-gray-950 px-3 py-2 text-left text-gray-400 font-medium border-b border-gray-800 min-w-[160px] cursor-pointer hover:text-gray-200 select-none"
+                >
+                  Nombre{sortArrow("name")}
                 </th>
                 {questions.map((q, i) => (
                   <th
@@ -75,13 +97,16 @@ export default function ResultsPage() {
                     {i + 1}
                   </th>
                 ))}
-                <th className="px-3 py-2 text-center text-gray-400 font-medium border-b border-gray-800">
-                  Total
+                <th
+                  onClick={() => toggleSort("score")}
+                  className="px-3 py-2 text-center text-gray-400 font-medium border-b border-gray-800 cursor-pointer hover:text-gray-200 select-none"
+                >
+                  Total{sortArrow("score")}
                 </th>
               </tr>
             </thead>
             <tbody>
-              {users.map((u) => {
+              {sortedUsers.map((u) => {
                 const map = answerMap[u.id] || {};
                 const score = userScore(u.id);
                 return (
